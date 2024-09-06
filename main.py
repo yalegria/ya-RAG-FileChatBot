@@ -93,7 +93,8 @@ def process_files(files):
             data_found |= csv_reader(file, file_key)
     
     if not data_found:
-        st.warning("The provided files do not meet your requirements.")  # Use warning instead of adding to history
+        #st.warning("The provided files do not meet your requirements.")  # Use warning instead of adding to history
+        pass
 
 # File Readers with content extraction
 def img_reader(file, file_key):
@@ -108,7 +109,7 @@ def pdf_reader(file, file_key):
     try:
         file_stream = BytesIO(file.read())
         if file_stream.getbuffer().nbytes == 0:
-            st.error("The provided PDF file is empty.")  # Use error instead of adding to history
+            #st.error("The provided PDF file is empty.")  # Use error instead of adding to history
             return False
         
         pdf_document = fitz.open(stream=file_stream, filetype="pdf")
@@ -141,7 +142,7 @@ def doc_reader(file, file_key):
         doc = Document(BytesIO(file.read()))
         text = "\n".join([para.text for para in doc.paragraphs])
         if text.strip() == "":
-            st.error("The provided Word document is empty or does not contain readable text.")  # Use error instead of adding to history
+            #st.error("The provided Word document is empty or does not contain readable text.")  # Use error instead of adding to history
             return False
         st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
         return True
