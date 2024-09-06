@@ -98,8 +98,13 @@ def process_files(files):
 
 # File Readers with content extraction
 def img_reader(file, file_key):
-    img = Image.open(file)
-    text = pytesseract.image_to_string(img)
+    try:
+        img = Image.open(file)
+        text = pytesseract.image_to_string(img)
+    except pytesseract.TesseractNotFoundError:
+        # Handle the error
+        print("Error: Tesseract OCR is not installed or not found in your PATH.")
+
     if text.strip() == "":
         return False
     st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
