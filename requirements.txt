@@ -1,0 +1,10 @@
+streamlit
+fitz  # 
+PyMuPDF
+langchain-community
+pandas
+python-docx
+pytesseract
+pillow
+python-pptx
+csv
