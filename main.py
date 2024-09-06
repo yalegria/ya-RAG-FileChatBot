@@ -102,6 +102,8 @@ def img_reader(file, file_key):
         img = Image.open(file)
         text = pytesseract.image_to_string(img)
         st.write(img)
+    except UnboundLocalError as e:
+        pass
     except pytesseract.TesseractNotFoundError:
         # Handle the error
         print("Error: Tesseract OCR is not installed or not found in your PATH.")
