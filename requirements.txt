@@ -1,3 +1,5 @@
+wheel
+setuptools
 streamlit==1.15.0
 PyMuPDF==1.20.1
 langchain-community==0.2.0
