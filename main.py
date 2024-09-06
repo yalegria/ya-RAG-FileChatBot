@@ -206,7 +206,7 @@ with input_container:
 
     query = st.text_area("Ask your AI Assistant", max_chars=10000, height=200, key="query_input")
 
-    if st.button("Send", use_container_width=True):
+    if st.button("Send"):
         if query:
             # Process files if any are uploaded
             if st.session_state.files_uploaded:
