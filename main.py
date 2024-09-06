@@ -15,9 +15,6 @@ import os
 # Initialize LangChain models
 chain_gpt_35 = ChatOpenAI(model="gpt-3.5-turbo")
 
-export OPENAI_API_KEY="your_openai_api_key_here"
-
-
 # Initialize session state attributes
 if 'history' not in st.session_state:
     st.session_state.history = []
