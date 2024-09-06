@@ -102,13 +102,13 @@ def img_reader(file, file_key):
         img = Image.open(file)
         text = pytesseract.image_to_string(img)
         st.write(img)
+        st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
+
     except UnboundLocalError as e:
         pass
     except pytesseract.TesseractNotFoundError:
         # Handle the error
         print("Error: Tesseract OCR is not installed or not found in your PATH.")
-
-    st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
     return True
 
 def pdf_reader(file, file_key):
