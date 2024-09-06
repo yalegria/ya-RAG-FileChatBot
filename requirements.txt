@@ -1,5 +1,4 @@
 streamlit
-fitz  # 
 PyMuPDF
 langchain-community
 pandas
