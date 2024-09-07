@@ -2,128 +2,87 @@ import streamlit as st
 import fitz  # PyMuPDF
 from io import BytesIO
 from langchain_community.chat_models import ChatOpenAI
-from langchain.schema.messages import HumanMessage
+from langchain.schema.messages import HumanMessage, AIMessage
 import pandas as pd
 from docx import Document
+import easyocr
 from PIL import Image
 from pptx import Presentation
 import csv
-from zipfile import BadZipFile  # Import BadZipFile from zipfile module
-import os
-import easyocr
 
 # Initialize LangChain models
 chain_gpt_35 = ChatOpenAI(model="gpt-3.5-turbo")
+chain_gpt_vision = ChatOpenAI(model="gpt-4-o-mini")
+
+# Initialize EasyOCR reader
+ocr_reader = easyocr.Reader(['en'])
 
 # Initialize session state attributes
 if 'history' not in st.session_state:
     st.session_state.history = []
 if 'files_uploaded' not in st.session_state:
     st.session_state.files_uploaded = []
-if 'file_contents' not in st.session_state:
-    st.session_state.file_contents = []  # Store extracted text content from files
-if 'file_titles' not in st.session_state:
-    st.session_state.file_titles = {}  # Store file titles
+if 'file_details' not in st.session_state:
+    st.session_state.file_details = {}
 
 # Title
-st.set_page_config(
-    page_title="LatheeshFileChatbot",
-    page_icon=":shark:",  # You can use emoji or the path to an image file
-)
-st.header("RAG File Chatbot")
-
-# Sidebar for API key input
-with st.sidebar:
-    api_key = st.text_input("Enter your OpenAI API Key", type="password")
-    if api_key:
-        os.environ["OPENAI_API_KEY"] = api_key
+st.set_page_config(page_title="RAG File Chatbot", page_icon=":robot:")
+st.title("RAG File Chatbot")
 
 # File uploader
-uploaded_files = st.file_uploader("Please Upload file", type=["png", "jpg", "jpeg", "pdf", "txt", "docx", "doc", "ppt", "pptx", "xls", "xlsx", "csv"], accept_multiple_files=True)
-# Assign files to variables and titles
-def assign_files_to_vars(files):
-    file_vars = {}
-    for i, file in enumerate(files):
-        file_key = f'file{i+1}'
-        file_vars[file_key] = file
-        st.session_state.file_titles[file_key] = file.name  # Store file title
-    return file_vars
-# Detect if files have been uploaded and update session state
-if uploaded_files and uploaded_files != st.session_state.files_uploaded:
-    st.session_state.files_uploaded = uploaded_files
+files = st.file_uploader("Please Upload file", type=["png", "jpg", "jpeg", "pdf", "txt", "docx", "doc", "ppt", "pptx", "xls", "xlsx", "csv"], accept_multiple_files=True)
+
+# Detect if files have been removed and clear history if so
+if files != st.session_state.files_uploaded:
+    st.session_state.files_uploaded = files
     st.session_state.history = []  # Clear chat history
-    st.session_state.file_contents = []  # Clear stored file contents
-    st.session_state.file_titles = {}  # Clear stored file titles
-    
-    # Assign files to variables and titles
-    file_vars = assign_files_to_vars(uploaded_files)
+    st.session_state.file_details = {}  # Clear file details
 
-# Function to append response to chat history
-def append_response_to_history(user_query, response):
-    # Append both user query and assistant response to history
-    st.session_state.history.append({"user": user_query, "assistant": response.content})
+# Display uploaded file details
+if st.session_state.files_uploaded:
+    st.write("### Uploaded Files")
+    for i, file in enumerate(st.session_state.files_uploaded):
+        file_name = file.name
+        st.write(f"file{i+1}: {file_name}")
 
-# Function to summarize content if it's too long
-def summarize_content(content):
-    # If the content length exceeds 2048 characters, summarize it
-    if len(content) > 4096:
-        response = chain_gpt_35.invoke([HumanMessage(content=f"Summarize the following content:\n\n{content[:5000]}")])
-        return response.content
-    return content
-
-# Function to process files
 def process_files(files):
     data_found = False
-    file_vars = assign_files_to_vars(files)
-    for file_key, file in file_vars.items():
+    for file in files:
         file_type = file.type
         if file_type in ['image/png', 'image/jpeg']:
-            data_found |= img_reader(file, file_key)
+            data_found |= img_reader(file)
         elif file_type == 'application/pdf':
-            data_found |= pdf_reader(file, file_key)
+            data_found |= pdf_reader(file)
         elif file_type == 'text/plain':
-            data_found |= txt_reader(file, file_key)
+            data_found |= txt_reader(file)
         elif file_type in ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword']:
-            data_found |= doc_reader(file, file_key)
+            data_found |= doc_reader(file)
         elif file_type in ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']:
-            data_found |= excel_reader(file, file_key)
+            data_found |= excel_reader(file)
         elif file_type in ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-powerpoint']:
-            data_found |= ppt_reader(file, file_key)
+            data_found |= ppt_reader(file)
         elif file_type == 'text/csv':
-            data_found |= csv_reader(file, file_key)
+            data_found |= csv_reader(file)
     
     if not data_found:
-        #st.warning("The provided files do not meet your requirements.")  # Use warning instead of adding to history
-        pass
+        st.session_state.history.append({"user": "", "assistant": "The provided files do not meet your requirements."})
 
-
-
-# Initialize the EasyOCR reader
-reader = easyocr.Reader(['en'])
-
-# File Readers with content extraction
-def img_reader(file, file_key):
-    # Read the image using PIL
+def img_reader(file):
     img = Image.open(file)
-    
-    # Perform OCR using EasyOCR
-    results = reader.readtext(img)
-    
-    # Extract and concatenate text from OCR results
-    text = "\n".join([result[1] for result in results])
-
-    # Print the extracted text and display the image
-    print(text)
-    st.write(img)
-    # Append summarized content to session state
-    #st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
+    text = ocr_reader.readtext(img, detail=0, paragraph=False)
+    text = "\n".join(text)
+    if text.strip() == "":
+        return False
+    prompt = f"Answer users query:\n\n{text}\n\n:"
+    response = chain_gpt_vision.invoke([HumanMessage(content=prompt)])
+    st.session_state.history.append({"user": "Image file", "assistant": response.content})
     return True
 
-def pdf_reader(file, file_key):
+def pdf_reader(file):
     try:
         file_stream = BytesIO(file.read())
         if file_stream.getbuffer().nbytes == 0:
-            #st.error("The provided PDF file is empty.")  # Use error instead of adding to history
+            st.session_state.history.append({"user": "", "assistant": "The provided PDF file is empty."})
             return False
         
         pdf_document = fitz.open(stream=file_stream, filetype="pdf")
@@ -134,46 +93,48 @@ def pdf_reader(file, file_key):
         pdf_document.close()
         
         if full_text.strip() == "":
-            st.error("The provided PDF file does not contain readable text.")  # Use error instead of adding to history
+            st.session_state.history.append({"user": "", "assistant": "The provided PDF file does not contain readable text."})
             return False
         
-        st.session_state.file_contents.append(f"{file_key}: {summarize_content(full_text)}")
+        prompt = f"Answer users query:\n\n{full_text}\n\n:"
+        response = chain_gpt_35.invoke([HumanMessage(content=prompt)])
+        st.session_state.history.append({"user": "PDF file", "assistant": response.content})
         return True
 
     except fitz.EmptyFileError:
-        st.error("The provided PDF file is empty or corrupted.")  # Use error instead of adding to history
+        st.session_state.history.append({"user": "", "assistant": "The provided PDF file is empty or corrupted."})
         return False
 
-def txt_reader(file, file_key):
+def txt_reader(file):
     text = file.read().decode("utf-8")
     if text.strip() == "":
         return False
-    st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
+    prompt = f"Answer the following Query for the user:\n\n{text}\n\n:"
+    response = chain_gpt_35.invoke([HumanMessage(content=prompt)])
+    st.session_state.history.append({"user": "Text file", "assistant": response.content})
     return True
 
-def doc_reader(file, file_key):
-    try:
-        doc = Document(BytesIO(file.read()))
-        text = "\n".join([para.text for para in doc.paragraphs])
-        if text.strip() == "":
-            #st.error("The provided Word document is empty or does not contain readable text.")  # Use error instead of adding to history
-            return False
-        st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
-        return True
-
-    except BadZipFile:
-        st.error("The provided file could not be read as a valid Word document (BadZipFile).")  # Use error instead of adding to history
+def doc_reader(file):
+    doc = Document(BytesIO(file.read()))
+    text = "\n".join([para.text for para in doc.paragraphs])
+    if text.strip() == "":
         return False
+    prompt = f"Answer users query:\n\n{text}\n\n:"
+    response = chain_gpt_35.invoke([HumanMessage(content=prompt)])
+    st.session_state.history.append({"user": "Word document", "assistant": response.content})
+    return True
 
-def excel_reader(file, file_key):
+def excel_reader(file):
     df = pd.read_excel(file)
     text = df.to_string()
     if text.strip() == "":
         return False
-    st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
+    prompt = f"Answer users query:\n\n{text}\n\n:"
+    response = chain_gpt_35.invoke([HumanMessage(content=prompt)])
+    st.session_state.history.append({"user": "Excel file", "assistant": response.content})
     return True
 
-def ppt_reader(file, file_key):
+def ppt_reader(file):
     presentation = Presentation(file)
     text = ""
     for slide in presentation.slides:
@@ -182,55 +143,49 @@ def ppt_reader(file, file_key):
                 text += shape.text + "\n"
     if text.strip() == "":
         return False
-    st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
+    prompt = f"Answer users query:\n\n{text}\n\n:"
+    response = chain_gpt_35.invoke([HumanMessage(content=prompt)])
+    st.session_state.history.append({"user": "PowerPoint file", "assistant": response.content})
     return True
 
-def csv_reader(file, file_key):
+def csv_reader(file):
     df = pd.read_csv(file)
     text = df.to_string()
     if text.strip() == "":
         return False
-    st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
+    prompt = f"Answer users query:\n\n{text}\n\n:"
+    response = chain_gpt_35.invoke([HumanMessage(content=prompt)])
+    st.session_state.history.append({"user": "CSV file", "assistant": response.content})
     return True
 
-# Function to handle user queries and invoke models
-def handle_user_query(user_query):
-    combined_content = "\n\n".join(st.session_state.file_contents)  # Combine all file contents
-    summarized_content = summarize_content(combined_content)  # Summarize combined content
-    prompt = f"Based on the following uploaded document contents:\n\n{summarized_content}\n\nUser's question: {user_query}"
-    response = chain_gpt_35.invoke([HumanMessage(content=prompt)])
-    append_response_to_history(user_query, response)
-
-# Display chat history
 def display_history():
-    for message in st.session_state.history[-5:]:  # Display only the last 5 messages to manage token limit
-        if message['user']:  # Only display messages that are not empty or system messages
-            st.write(f"**User:** {message['user']}")
-            st.write(f"**Assistant:** {message['assistant']}")
+    for message in st.session_state.history:
+        st.write(f"**User:** {message['user']}")
+        st.write(f"**Assistant:** {message['assistant']}")
 
 # Main chat layout
 chat_container = st.container()
 input_container = st.container()
 
 with input_container:
-    # Display the uploaded files
-    if st.session_state.file_titles:
-        st.write("### Uploaded Files")
-        for file_key, file_title in st.session_state.file_titles.items():
-            st.write(f"{file_key}: {file_title}")
-
     query = st.text_area("Ask your AI Assistant", max_chars=10000, height=200, key="query_input")
 
-    if st.button("Send"):
+    if st.button("Send", use_container_width=True):
         if query:
+            # Add user query to history
+            st.session_state.history.append({"user": query, "assistant": "Processing..."})
+
             # Process files if any are uploaded
             if st.session_state.files_uploaded:
                 process_files(st.session_state.files_uploaded)
             
-            # Handle the user's query using the uploaded files content
-            handle_user_query(query)
-    
-    # Display chat history
+            # Get the assistant's response
+            history_messages = [HumanMessage(content=msg['user']) for msg in st.session_state.history]
+            history_messages.append(HumanMessage(content=query))
+            
+            response = chain_gpt_35.invoke(history_messages)
+            st.session_state.history[-1]["assistant"] = response.content  # Update latest response
+
     with chat_container:
         st.write("### Conversation History")
         display_history()
