@@ -5,14 +5,13 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain.schema.messages import HumanMessage
 import pandas as pd
 from docx import Document
-import pytesseract
 from PIL import Image
 from pptx import Presentation
 import csv
 from zipfile import BadZipFile  # Import BadZipFile from zipfile module
 import os
-import pytesseract
-pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+import easyocr
+
 # Initialize LangChain models
 chain_gpt_35 = ChatOpenAI(model="gpt-3.5-turbo")
 
@@ -97,14 +96,27 @@ def process_files(files):
         #st.warning("The provided files do not meet your requirements.")  # Use warning instead of adding to history
         pass
 
+
+
+# Initialize the EasyOCR reader
+reader = easyocr.Reader(['en'])
+
 # File Readers with content extraction
 def img_reader(file, file_key):
+    # Read the image using PIL
     img = Image.open(file)
-    text = pytesseract.image_to_string(img)
+    
+    # Perform OCR using EasyOCR
+    results = reader.readtext(img)
+    
+    # Extract and concatenate text from OCR results
+    text = "\n".join([result[1] for result in results])
+
+    # Print the extracted text and display the image
     print(text)
     st.write(img)
-    st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
-
+    # Append summarized content to session state
+    #st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
     return True
 
 def pdf_reader(file, file_key):
