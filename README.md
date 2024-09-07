@@ -28,7 +28,7 @@ RAG File Chatbot is a Streamlit-based application that leverages LangChain, Open
 
 1. **Clone the repository**:
     ```bash
-    git clone https://github.com/your-username/rag-file-chatbot.git
+    git clone https://github.com/latheeshmangeri/rag-file-chatbot.git
     cd rag-file-chatbot
     ```
 
