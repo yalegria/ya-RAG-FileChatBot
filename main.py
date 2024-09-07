@@ -11,7 +11,8 @@ from pptx import Presentation
 import csv
 from zipfile import BadZipFile  # Import BadZipFile from zipfile module
 import os
-
+import pytesseract
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 # Initialize LangChain models
 chain_gpt_35 = ChatOpenAI(model="gpt-3.5-turbo")
 
