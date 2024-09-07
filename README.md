@@ -1,10 +1,8 @@
-# RAG-FileChatBot
 
-Here's a `README.md` file for your Streamlit project:
-
----
 
 # RAG File Chatbot
+
+---
 
 RAG File Chatbot is a Streamlit-based application that leverages LangChain, OpenAI, and EasyOCR to provide intelligent responses based on user-uploaded documents. The chatbot supports multiple file types and uses generative AI to answer queries from the provided files.
 
@@ -95,5 +93,3 @@ Feel free to contribute by opening issues or creating pull requests. Any contrib
 - [LangChain](https://github.com/langchain-ai/langchain) for the powerful AI models.
 - [EasyOCR](https://github.com/JaidedAI/EasyOCR) for efficient OCR capabilities.
 - [Streamlit](https://streamlit.io/) for the amazing web app framework.
-
----
