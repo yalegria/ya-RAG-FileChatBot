@@ -28,7 +28,7 @@ if 'file_titles' not in st.session_state:
 # Title
 st.set_page_config(
     page_title="LatheeshFileChatbot",
-    page_icon=":shark:",  # You can use emoji or the path to an image file
+    page_icon="🤖",  # You can use emoji or the path to an image file
 )
 st.header("RAG File Chatbot")
 
