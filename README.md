@@ -89,9 +89,6 @@ You can customize the application further by modifying the following:
 
 Feel free to contribute by opening issues or creating pull requests. Any contributions are welcome!
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
