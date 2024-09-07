@@ -5,7 +5,8 @@ PyMuPDF==1.20.1
 langchain-community==0.2.0
 pandas==2.0.0
 python-docx==0.8.11
-pytesseract==0.3.10
+pytesseract
 pillow==9.5.0
 python-pptx==0.6.21
 openai
+openpyxl
