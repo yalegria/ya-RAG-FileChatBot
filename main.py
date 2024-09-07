@@ -170,7 +170,7 @@ input_container = st.container()
 with input_container:
     query = st.text_area("Ask your AI Assistant", max_chars=10000, height=200, key="query_input")
 
-    if st.button("Send", use_container_width=True):
+    if st.button("Send"):
         if query:
             # Add user query to history
             st.session_state.history.append({"user": query, "assistant": "Processing..."})
