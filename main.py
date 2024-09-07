@@ -98,6 +98,7 @@ def process_files(files):
 
 # File Readers with content extraction
 def img_reader(file, file_key):
+    print('xx')
     try:
         img = Image.open(file)
         text = pytesseract.image_to_string(img)
