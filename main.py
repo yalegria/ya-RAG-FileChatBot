@@ -66,8 +66,8 @@ def append_response_to_history(user_query, response):
 # Function to summarize content if it's too long
 def summarize_content(content):
     # If the content length exceeds 2048 characters, summarize it
-    if len(content) > 4096:
-        response = chain_gpt_35.invoke([HumanMessage(content=f"Summarize the following content:\n\n{content[:5000]}")])
+    if len(content) > 16384:
+        response = chain_gpt_35.invoke([HumanMessage(content=f"Summarize the following content:\n\n{content[:16000]}")])
         return response.content
     return content
 
