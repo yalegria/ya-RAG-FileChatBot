@@ -98,13 +98,11 @@ def process_files(files):
 
 # File Readers with content extraction
 def img_reader(file, file_key):
-    print('xx')
-    try:
-        img = Image.open(file)
-        text = pytesseract.image_to_string(img)
-        print(text)
-        st.write(img)
-        st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
+    img = Image.open(file)
+    text = pytesseract.image_to_string(img)
+    print(text)
+    st.write(img)
+    st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
 
     except UnboundLocalError as e:
         print("unbound Error")
