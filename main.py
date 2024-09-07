@@ -101,6 +101,7 @@ def img_reader(file, file_key):
     try:
         img = Image.open(file)
         text = pytesseract.image_to_string(img)
+        print(text)
         st.write(img)
         st.session_state.file_contents.append(f"{file_key}: {summarize_content(text)}")
 
