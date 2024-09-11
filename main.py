@@ -27,10 +27,10 @@ if 'file_titles' not in st.session_state:
 
 # Title
 st.set_page_config(
-    page_title="LatheeshFileChatbot",
+    page_title="RAG File Assistant - Yuri Alegria",
     page_icon=":robot:",  # You can use emoji or the path to an image file
 )
-st.header("RAG File Chatbot")
+st.header("RAG File Assistant")
 
 # Sidebar for API key input
 with st.sidebar:
