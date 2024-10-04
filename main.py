@@ -1,11 +1,20 @@
 import streamlit as st
+
+# Library for data extraction,analysis, conversion & manipulation of PDFs. 
 import fitz  # PyMuPDF
+
 from io import BytesIO
+
+# TODO: Deprecated, migrate to langchain_openai.ChatOpenAI
 from langchain_community.chat_models import ChatOpenAI
+
 from langchain.schema.messages import HumanMessage
 import pandas as pd
 from docx import Document
+
+# Optical character recognition library
 import pytesseract
+
 from PIL import Image
 from pptx import Presentation
 import csv
@@ -30,16 +39,15 @@ st.set_page_config(
     page_title="RAG File Assistant - Yuri Alegria",
     page_icon=":robot:",  # You can use emoji or the path to an image file
 )
-st.header("RAG File Assistant")
+
 
 # Sidebar for API key input
-with st.sidebar:
-    api_key = st.text_input("Enter your OpenAI API Key", type="password")
-    if api_key:
-        os.environ["OPENAI_API_KEY"] = api_key
+#with st.sidebar:
+#    api_key = st.text_input("Enter your OpenAI API Key", type="password")
+#    if api_key:
+#        os.environ["OPENAI_API_KEY"] = api_key
 
-# File uploader
-uploaded_files = st.file_uploader("Please Upload file", type=["png", "jpg", "jpeg", "pdf", "txt", "docx", "doc", "ppt", "pptx", "xls", "xlsx", "csv"], accept_multiple_files=True)
+
 # Assign files to variables and titles
 def assign_files_to_vars(files):
     file_vars = {}
@@ -48,15 +56,8 @@ def assign_files_to_vars(files):
         file_vars[file_key] = file
         st.session_state.file_titles[file_key] = file.name  # Store file title
     return file_vars
-# Detect if files have been uploaded and update session state
-if uploaded_files and uploaded_files != st.session_state.files_uploaded:
-    st.session_state.files_uploaded = uploaded_files
-    st.session_state.history = []  # Clear chat history
-    st.session_state.file_contents = []  # Clear stored file contents
-    st.session_state.file_titles = {}  # Clear stored file titles
-    
-    # Assign files to variables and titles
-    file_vars = assign_files_to_vars(uploaded_files)
+
+
 
 # Function to append response to chat history
 def append_response_to_history(user_query, response):
@@ -97,6 +98,8 @@ def process_files(files):
         pass
 
 # File Readers with content extraction
+
+# Image reader for image files containing text
 def img_reader(file, file_key):
     img = Image.open(file)
     text = pytesseract.image_to_string(img)
@@ -104,6 +107,7 @@ def img_reader(file, file_key):
 
     return True
 
+# PDF reader using fitz library
 def pdf_reader(file, file_key):
     try:
         file_stream = BytesIO(file.read())
@@ -183,39 +187,184 @@ def handle_user_query(user_query):
     combined_content = "\n\n".join(st.session_state.file_contents)  # Combine all file contents
     summarized_content = summarize_content(combined_content)  # Summarize combined content
     prompt = f"Based on the following uploaded document contents:\n\n{summarized_content}\n\nUser's question: {user_query}"
+
+    # Transform a single input into an output
+    # HumanMessage represents a message with role "user"
     response = chain_gpt_35.invoke([HumanMessage(content=prompt)])
+
+
     append_response_to_history(user_query, response)
 
+
 # Display chat history
+
+#def display_history():
+#    for message in st.session_state.history[-5:]:  # Display only the last 5 messages to manage token limit
+#        if message['user']:  # Only display messages that are not empty or system messages
+#            st.write(f"**User:** {message['user']}")
+#            st.write(f"**Assistant:** {message['assistant']}")
+
+
 def display_history():
     for message in st.session_state.history[-5:]:  # Display only the last 5 messages to manage token limit
         if message['user']:  # Only display messages that are not empty or system messages
-            st.write(f"**User:** {message['user']}")
-            st.write(f"**Assistant:** {message['assistant']}")
-
-# Main chat layout
-chat_container = st.container()
-input_container = st.container()
-
-with input_container:
-    # Display the uploaded files
-    if st.session_state.file_titles:
-        st.write("### Uploaded Files")
-        for file_key, file_title in st.session_state.file_titles.items():
-            st.write(f"{file_key}: {file_title}")
-
-    query = st.text_area("Ask your AI Assistant", max_chars=10000, height=200, key="query_input")
-
-    if st.button("Send"):
-        if query:
-            # Process files if any are uploaded
-            if st.session_state.files_uploaded:
-                process_files(st.session_state.files_uploaded)
+            st.markdown(f"""
+                <p style="margin-bottom:2px;font-weight:bold;">User:</p>
+                <div style='background-color:#d1f0ff; padding:10px; border-radius:10px; margin-bottom:10px;'>
+                    <p>{message['user']}</p>
+                </div>
+            """, unsafe_allow_html=True)
             
-            # Handle the user's query using the uploaded files content
-            handle_user_query(query)
+            st.markdown(f"""
+                <p style="margin-bottom:2px;font-weight:bold;">Assistant:</p>
+                <div style='background-color:#f7f7f7; padding:10px; border-radius:10px; margin-bottom:10px;'>
+                    <p>{message['assistant']}</p>
+                </div>
+            """, unsafe_allow_html=True)
+
+
+# Intro page layout (centered header, input, and button)
+def intro_page():
+    # Custom CSS for vertical and horizontal centering
+    st.markdown("""
+        <style>
+            .centered-container {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 90vh;  /* Vertically center the content */
+                text-align: center;
+            }
+            .centered-content {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+                max-width: 400px;
+                margin: 0 auto;
+            }
+            .centered-content h1 {
+                margin-bottom: 20px;
+            }
+            .centered-content input {
+                width: 100%;
+                height: 40px;
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+        </style>
+        <div class="centered-container">
+            <div class="centered-content">
+                <h1>Welcome to the Chat App</h1>
+                <p>Please enter your ID to continue</p>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Input field and button using Streamlit's form
+    with st.form("user_id_form", clear_on_submit=True):
+        user_id = st.text_input("Enter your ID", "")
+        submitted = st.form_submit_button("Continue")
+
+    if submitted:
+        if user_id:  # Only proceed if an ID is entered
+            st.session_state.user_id = user_id
+            go_to_chat()  # Navigate to the chat page
+        else:
+            st.warning("Please enter a valid ID.")
+
+if 'query_input' not in st.session_state:
+    st.session_state.query_input = ""
+
+
+def chat_page():
+    st.header("RAG File Assistant", divider="red")
+
+    # File uploader
+    uploaded_files = st.file_uploader("Please Upload file", type=["png", "jpg", "jpeg", "pdf", "txt", "docx", "doc", "ppt", "pptx", "xls", "xlsx", "csv"], accept_multiple_files=True)
     
+    # Detect if files have been uploaded and update session state
+    if uploaded_files and uploaded_files != st.session_state.files_uploaded:
+        st.session_state.files_uploaded = uploaded_files
+        st.session_state.history = []  # Clear chat history
+        st.session_state.file_contents = []  # Clear stored file contents
+        st.session_state.file_titles = {}  # Clear stored file titles
+        
+        # Assign files to variables and titles
+        file_vars = assign_files_to_vars(uploaded_files)
+
+
+    col1, col2 = st.columns([0.3,0.7])
+
+    with col1:
+        input_container = st.container()
+
+    with col2:
+        chat_container = st.container()
+
+    with input_container:
+        # Display the uploaded files
+        if st.session_state.file_titles:
+            st.write("### Uploaded Files")
+            for file_key, file_title in st.session_state.file_titles.items():
+                st.write(f"{file_key}: {file_title}")
+        
+        
     # Display chat history
     with chat_container:
         st.write("### Conversation History")
         display_history()
+
+        # Textarea
+
+
+        # Textarea within a form for better handling
+        with st.form(key='chat_form', clear_on_submit=True):
+            query = st.text_area(
+                "Ask your AI Assistant",
+                max_chars=10000, 
+                height=200, 
+                key="query_input"
+            )
+            submit_button = st.form_submit_button(label="Send", on_click=send_message)
+
+
+
+def send_message():
+    query = st.session_state.query_input.strip()  # Get and trim the input
+    
+    if query:
+        #st.session_state.history.append({"user": query})  # Append user message to history
+        st.write(f"Message sent: {query}")  # Replace with actual processing logic
+        
+        # Process files if any are uploaded
+        if st.session_state.files_uploaded:
+            process_files(st.session_state.files_uploaded)
+        
+        # Handle the user's query using the uploaded files content
+        handle_user_query(query)
+        
+        st.session_state.query_input = ''  # Clear the textarea
+    else:
+        st.warning("Please enter a message before sending.")
+
+####################
+### MAIN HANDLER ###
+####################
+
+if 'query_input' not in st.session_state:
+    st.session_state.query_input = ""
+
+# Initialize session state for page navigation
+if 'page' not in st.session_state:
+    st.session_state.page = 'intro'  # Start on the intro page
+
+# Function to switch to the chat page
+def go_to_chat():
+    st.session_state.page = 'chat'
+
+# Page navigation logic
+if st.session_state.page == 'intro':
+    intro_page()  # Display the intro page
+elif st.session_state.page == 'chat':
+    chat_page()  # Display the chat page
