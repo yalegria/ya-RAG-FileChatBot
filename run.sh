@@ -20,6 +20,9 @@ trap stopRunningProcess EXIT TERM
 
 source ${VIRTUAL_ENV}/bin/activate
 
+# Run database migrations
+alembic upgrade head
+
 streamlit run ${HOME}/app/main.py &
 APP_ID=${!}
 
